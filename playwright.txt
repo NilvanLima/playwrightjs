@@ -1,0 +1,297 @@
+playwright >>>
+
+M1 VANTAGENS E DES
+vantagens 
+-testes paralelos por default
+-checa várias condições do componente por default > visivel > clicavel e etc 
+-roda em varios sistemas operacionais, linguagens 
+-debugger próprio
+-manutenção pela microsoft
+playwright roda em headless mode por default
+
+M2 SETUP 
+
+M3 REGRAS 
+test ()function
+fixtures para reduzir 
+expect () for assertions
+async-await dicas de sintaxe
+
+>tem q ter ".test" ou ".spec" no arquivo de teste, se não o playwright não reconhece
+>terminação do arquivo tem q ser js| ts | mjs 
+>problemas pra usuários de windows de ter "\", se for rodar com a barra invertida o playwright ele meio q quebra, mas tem plugin q arruma o auto-complete no vscode
+>plugin n pega outros diretórios
+>playwright cria o setup pra gente, n precisa ficar settando browserType e etc
+
+
+>>>atenção pra n ter 2 pastas "tests", se n entra em conflito e n reconhece a bagaça...
+
+page = oq eu mais quero nos meus testes de UI, assim eu consigo navegar até a página e clicar e etc, preciso de outras pra ter multi pages 
+ passo nos parametros da func async ({page}) => pra poder chamar várias páginas ex: 
+	await page1
+	await page2
+	await page3
+
+context = 
+
+quer expect? importa o expect no import.
+
+rodar o server > node .\playwright-nodejs-starter\server.js    
+pq usar expect: web first assertions> espero q tal campo/etc esteja habilitado, visivel, whatever 
+>ter um problema de isVisible, playwright previne casos do tipo já tendo await pra tal componente estar em tal estado
+
+>async >>> leva um tempo, await >>>> espera antes de continuar 
+>navegar pra uma página leva tempo, então a gente espera carregar
+>localizar um elemento antes de ter uma ação leva tempo
+>esperando q algo aparece na tela também leva tempo
+>tudo q requer tempo, ter q ter um await
+
+tem q ter um await quando estamos fazendo uma promise
+tem uma promise, tem q esperar
+
+p lembrar:
+>titulos únicos 
+>usar page e outras fixtures pra evitar código duplicado e código de setup possa ser escrito
+>ordinary vs web search assertions
+	ordinary = expect()...
+	websearch assertion = await expect()...
+	>usar await sempre quando uma ação ou assertion retorna uma promise pra evitar condição de corrida e flaky testes
+	
+>retries
+
+>web action > goto, click, select
+>web first assertions> retorna promises e elas devem ser esperadas, sempre q tiver dúvida ver a assinatura da função
+
+rodar os testes:
+
+simples:
+npx playwright test: default q procura arquivos q batam com um padrão
+
+especifico:
+npx playwright test tests/your-file.spec.ts
+
+todos:
+npx playwright test tests/your-dir
+>rodar "/" no windows
+
+M4 LOCATORS
+
+>quando temos um botão, precisamos localiza-lo
+
+>colocou a url base no arquivo "playwright.config.ts" >>> arquivo global do projeto
+
+elemento no html abaixo
+const firstName = page.getByLabel('First name');
+    //retorna um objeto locator, pode salvar como variável ou const, só é um locator, não é uma promise então não precisa de um 'await'
+
+
+//page object > função getByRole > button (argumento1) > especificar com o nome do atributo e função .click()
+    //podemos salvar numa variável ou invocar uma ação diretamente, como abaixo:
+    await page.getByRole('button', {name: 'Register'}).click();
+	
+>tem vários tipos de elementos e campos em "types.d.ts" dentro do getByRole
+>getByRole vai ser bem usado
+
+>só tava abrindo o browser rodando o 'npx playwright test'
+
+expressão regular vs string
+se especificar a string especifica, pode usar o exact pra ter o resultado exato
+
+getByText
+>pegar um elemento pelo texto dele
+
+>outros locators
+>getbyrolem getbytext e label vão ser os mais usados e recomendados
+
+>playwright deixa pegar o texto de um input se tiver placeholder especificado
+	*page.getByPlaceholder()
+
+>podemos localizar uma imagem pelo texto alternativo dela
+	*page.getByAltText()
+
+>se o elemento tiver um atributo title
+	*page.getByTitle()
+	*os devs do playwright acharam q seria worth it 
+	
+> finalmente, getByTestId
+	>id's que não são dinamicamente são os melhores
+	>devem ser únicos numa página
+	>fica mais fácil de achar as coisas
+
+os componentes tem de ter 'data-testid='peteca' neles
+
+OU
+podemos fazer um override disso no arquivo de config global do playwright com
+
+>dentro do 
+	export default defineConfig
+	(
+		{
+			use: 
+				{
+					testIdAttribute: 'data-pw'
+				}
+		}
+	)};
+
+-vai poder usar o test-id function	
+
+Locators Genericos
+>se nenhum approach funcionar, (devs colocarem data-testid, ter os locators), podemos usar css e seletores Xpath 
+>com css e Xpath selectors tem uma infinidade de jeitos de selecionar as coisas
+1. a class
+
+> Xpath no devtools do google
+	> .needs-validation label[for="firstName"]
+	sintax xpath serve pra achar coisas pelo css
+	
+	
+	//form// > busca o form da página 
+	
+	//form//button > busca todos os botões da página no form 
+	
+	//form//button[2] > busca todos os botões da página no form, no index 2
+	>possibilidades fodas mesmo sem datatest-id
+	
+	vai buscar o único form da página 
+>deve ser usado como última opção
+
+*Aplicando Filtros*
+>aplicar filtros em elementos, ex: em aplicações podemos ter botões identicos, caixas, textos identicos,
+oq faz o getByRole pegar vários elementos, digamos q queremos pegar o elemento 2 ou 3, que seja
+
+>função filter()
+>pegar células de tabela 
+
+	//vai pegar 3 rows da pág sem especificar
+    const rows = page.getByRole('row');
+    console.log(await rows.count());
+
+    //quero pegar 1 role especifica = Competition, uso o .filter() e passo o Competition {hasText: 'Competition'}
+    //vai retornar todo o texto disso
+    const row = page.getByRole('row')
+        .filter({hasText: 'Competition'});
+    console.log(await row.textContent());
+
+    //pegar 1 célula especifica 
+    const cell = page.getByRole('row')
+        .filter({hasText: 'Competition'})
+        .getByRole('cell')
+        .nth(1); //começa do 0 então pega o index 2 = 2%
+    console.log(await cell.textContent());
+
+Lidando com multiplas correspondencias// multiple matches
+	>situação onde o PW acha 2 botões e só olha pro primeiro, q leva a confusão e causa perda de tempo, debugging e etc
+	
+	test ('Falha com multiplos matches', async ({ page }) => 
+	{
+		await page.goto('/');
+
+		//PW vai achar vários então vai quebrar, tem de ser 1 só
+		await page.getByRole('link').click();
+	});
+
+	jeito de lidar com os multiplos matches
+	test ('Matchs multiplos - primeiro, último, nth', async ({page}) => 
+	{
+		await page.goto('/');
+
+		//se eu espero multiplos matches, ex: fetch 3 botões num form
+		//salvar o locator numa const, colocar o first, last e nth
+		//código mais curto mas, frágil, uma mudança no html desses botões vai mudar a ordem e quebrar a lógica dos testes 
+		const buttons = page.getByRole('button');
+
+		console.log(await buttons.first().textContent());
+		console.log(await buttons.last().textContent());
+		console.log(await buttons.nth(1).textContent());
+	});
+
+	outro jeito de lidar = transformar um localizador único num array de locators:
+		test ('Teste de multiplos matches - contar ou iterar', async ({page}) => 
+	{
+		await page.goto('/');
+		await page.getByRole('button', {name: 'Register'}).click();
+
+		//procurando por todas validações no Register
+		const feedback = page.locator('.invalid-feedback');
+
+		//esperamos ter count ser 3
+		await expect(feedback).toHaveCount(3);
+
+		//outro caso de uso é ITERAR tudo que localizamos e performar uma ação, um loop resolve
+		//invocar a função all() para converter o locator único num array de locators
+		for(const message of await feedback.all())
+		{
+			//podemos usar o click, outras ações...
+			console.log(`${await message.textContent()}`);
+		}
+	});
+
+Outros métodos de locators
+>tem no minimo mais 2 métodos, mas o desencorajam na maioria dos casos
+
+>problemas levaram a galera a não utilizar muito esses 2 
+
+	test("Fill test", async({ page }) => 
+	{
+		await page.goto('/');
+
+		//jeito 1, usando o page object chamando as ações diretamente e passando um locator
+		await page.check('#heard-about'); //passando um checkbox e procurando ele usando o id
+		await page.check('#heard-about'); //ID duplicado do locator ou extrair as string locators para consts globais e isso não é legal...
+
+		//jeito 2, ação > locator e passando o texto
+		//a principio esse é melhor, curto e simples
+		//era o jeito sugerido pelo PW
+		//tem desvantagens: 
+			// 1- essas ações retornam uma promise vazia Promise<void>, ou seja, retornam nada, n retornam locator, locators não existem como conceito de um evento while
+				// 1.2- se quisessemos clicar 2 vezes, teriamos que duplicar a string do locator
+			// 2- comportamento de antes de um locator achar vários elementos e só funcionar no primeiro
+		await page.fill('#textarea', 'Peteca...');
+	});
+
+	Tem outro desencorajado pelo próprio PW: ElementHandle
+	>elementhandle aponta pra um elemento especifico, ex: <a>
+	>locator pega a lógica de como recuperar um elemento 
+	>parece a mesma coisa falada mas a função é diferente
+	>elementhandle requer mais código do que o necessário 
+	
+	ex das caixas 
+	
+	const el = await page.$('list');
+		//assert conta até 3
+	> gera 9 
+	
+	daí ter de fazer outra contagem pra pegar os 9
+	const el2 = await page.$('list');
+		//assert conta até 9
+		
+	COM LOCATORS > busca(fetch) 1 vez, faz o assert, clica nas coisas, o elemento é atualizado e podemos fazer uma asserção logo em seguida
+	
+	const el = await page.getByLabel('list');
+		await expect(el).toHaveCount(3);
+		// ações...
+		await expect(el).toHaveCount(9);
+	just-in-time busca e avaliação (fetching and evaluating)
+	
+Locating Frames
+	iframe[id=bar]
+	
+	>PW torna isso fácil de localizar
+	> função frameLocator()
+	
+	const button = page
+		.frameLocator('#bar') //pega o frame
+		.getByRole('button'); //pega elementos dentro do frame se quiser
+	//mesma coisa pra outros elementos
+	
+Plugin do PW pra agilizar locators 
+
+//Record new na aba do PW em tests, onde vc replica na tela oq vc quer e o PW monta as coisas pra vc
+
+revisão
+	>prefira user-facing  para localizar elementos
+	>se n funcionar, use o a função .locator('#someId')
+	>ferramenta de geração de código para acelerar as coisas 
+	
+M5 
