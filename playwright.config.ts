@@ -28,8 +28,9 @@ export default defineConfig({
   use: 
   {
     baseURL: 'http://localhost:3000/',
+    screenshot: 'only-on-failure',
     headless: false,
-    launchOptions: {slowMo: 1000}
+    launchOptions: {slowMo: 100}
     //cada teste vai abrir no browser e vai ter um delay de 1 seg
   },
 
